@@ -1,4 +1,5 @@
 version: "3.8"
+
 services:
   postgres:
     image: postgres:13
@@ -14,6 +15,7 @@ services:
 
   pega-installer:
     image: pega-docker.downloads.pega.com/platform/installer:24.1.0
+    container_name: pega-installer
     depends_on:
       - postgres
     environment:
@@ -22,10 +24,11 @@ services:
       DB_NAME: pega
       DB_USER: pega
       DB_PASSWORD: pega123
-    command: ["sh", "-c", "sleep 5 && ./install.sh"]
+    command: ["./wait-for-it.sh", "postgres", "5432", "sh", "-c", "./install.sh"]
 
   pega-web:
     image: pega-docker.downloads.pega.com/platform/pega:24.1.0
+    container_name: pega-web
     depends_on:
       - pega-installer
       - postgres
@@ -35,6 +38,13 @@ services:
       DB_NAME: pega
       DB_USER: pega
       DB_PASSWORD: pega123
+    command: ["sh", "-c", "
+      while ! curl -s http://pega-installer:8080/healthz; do
+        echo 'Waiting for installer...'
+        sleep 5
+      done
+      /start-prweb.sh
+    "]
     ports:
       - "8080:8080"
 
