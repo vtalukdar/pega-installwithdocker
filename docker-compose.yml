@@ -1,0 +1,42 @@
+version: "3.8"
+services:
+  postgres:
+    image: postgres:13
+    container_name: pega-postgres
+    environment:
+      POSTGRES_DB: pega
+      POSTGRES_USER: pega
+      POSTGRES_PASSWORD: pega123
+    ports:
+      - "5432:5432"
+    volumes:
+      - pega_pgdata:/var/lib/postgresql/data
+
+  pega-installer:
+    image: pega-docker.downloads.pega.com/platform/installer:24.1.0
+    depends_on:
+      - postgres
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: pega
+      DB_USER: pega
+      DB_PASSWORD: pega123
+    command: ["sh", "-c", "sleep 5 && ./install.sh"]
+
+  pega-web:
+    image: pega-docker.downloads.pega.com/platform/pega:24.1.0
+    depends_on:
+      - pega-installer
+      - postgres
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: pega
+      DB_USER: pega
+      DB_PASSWORD: pega123
+    ports:
+      - "8080:8080"
+
+volumes:
+  pega_pgdata:
